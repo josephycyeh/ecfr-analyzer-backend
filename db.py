@@ -1,21 +1,21 @@
 import psycopg2
 from psycopg2.extras import RealDictCursor
-from config import DATABASE_CONFIG
+from config import DB_CONFIG
 
 def get_db_connection():
     """Create a database connection."""
     try:
         conn = psycopg2.connect(
-            **DATABASE_CONFIG,
+            **DB_CONFIG,
             cursor_factory=RealDictCursor
         )
         return conn
     except psycopg2.Error as e:
         print(f"Database connection error: {e}")
-        print(f"Connection parameters: host={DATABASE_CONFIG['host']}, "
-              f"port={DATABASE_CONFIG['port']}, "
-              f"database={DATABASE_CONFIG['database']}, "
-              f"user={DATABASE_CONFIG['user']}")
+        print(f"Connection parameters: host={DB_CONFIG['host']}, "
+              f"port={DB_CONFIG['port']}, "
+              f"database={DB_CONFIG['dbname']}, "
+              f"user={DB_CONFIG['user']}")
         raise
 
 def execute_query(query, params=None, fetch=True):
