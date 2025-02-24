@@ -53,7 +53,7 @@ def extract_relevant_text_and_sections(root, ref):
 
     if not hierarchy_trail:
         return "", 0  # No valid reference
-    print(ref)
+
     # Build the XPath query dynamically based on available hierarchy
     xpath_query = ".//"
     for level in hierarchy_trail:
@@ -61,10 +61,8 @@ def extract_relevant_text_and_sections(root, ref):
         node_value = ref[level]
         xpath_query += f"*[@TYPE='{node_type}'][@N='{node_value}']/"
 
-    # Remove trailing slash
     xpath_query = xpath_query.rstrip("/")
 
-    # Locate the most specific element matching the full trail
     matching_nodes = root.findall(xpath_query)
 
     text_segments = []
@@ -89,7 +87,7 @@ def count_words(text):
 def compute_agency_word_and_section_count(agency, titles_data, title_xml_cache):
     """Computes word and section count for agencies, ensuring we follow the hierarchy trail."""
     results = {
-        "slug": agency["slug"],  # Store agency slug
+        "slug": agency["slug"], 
         "total_words": 0,
         "total_sections": 0,
         "children": {}
@@ -188,18 +186,10 @@ def main():
     # Process agency data
     results = process_agency_data()
     
-    # Process corrections data
     corrections_summary = process_corrections_data()
 
-    # Save results to JSON files
-    with open("results.json", "w", encoding="utf-8") as json_file:
-        json.dump(results, json_file, indent=4)
-
-    with open("corrections_summary.json", "w", encoding="utf-8") as json_file:
-        json.dump(corrections_summary, json_file, indent=4)
-
-    print("Results saved to results.json")
-    print("Corrections summary saved to corrections_summary.json")
+    print(len(results))
+    print(len(corrections_summary))
 
 if __name__ == "__main__":
     main()
