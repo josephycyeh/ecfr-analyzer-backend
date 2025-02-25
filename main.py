@@ -126,7 +126,7 @@ def compute_references_word_and_section_count(references, titles_data, title_xml
         if cache_key not in title_xml_cache:
             xml_bytes = download_entire_title_xml(title_num, latest_date)
             root = ET.fromstring(xml_bytes) 
-            # title_xml_cache[cache_key] = root
+            title_xml_cache[cache_key] = root
         else:
             root = title_xml_cache[cache_key]
 
