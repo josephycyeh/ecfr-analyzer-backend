@@ -67,7 +67,7 @@ def execute_transaction(queries):
                 try:
                     results.append(cur.fetchall())
                 except psycopg2.ProgrammingError:
-                    # No results to fetch (e.g., for INSERT without RETURNING)
+                   
                     results.append(None)
         conn.commit()
         return results

@@ -10,11 +10,7 @@ def get_all_corrections():
     return execute_query(query)
 
 def insert_corrections_data(corrections_data):
-    """Insert corrections data into database.
-    
-    Args:
-        corrections_data (dict): Dictionary mapping years to correction counts
-    """
+    """Insert corrections data into database."""
     queries = [
         (
             """
