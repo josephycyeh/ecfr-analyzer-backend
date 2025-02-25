@@ -1,6 +1,8 @@
 import requests
 import lxml.etree as ET
 import json
+import os
+import tempfile
 from collections import defaultdict
 
 BASE_URL = "https://www.ecfr.gov"
@@ -29,14 +31,20 @@ def find_latest_issue_date(titles_data, title_num):
     return None
 
 # ========== DOWNLOAD & PROCESS TITLE XML ==========
-def download_entire_title_xml(title_num, date_str):
-    """Download the full XML for a given Title and date."""
+def download_and_cache_title_xml(title_num, date_str):
+    """Download the full XML for a given Title and date, store it temporarily on disk."""
     url = f"{BASE_URL}/api/versioner/v1/full/{date_str}/title-{title_num}.xml"
     resp = requests.get(url, headers={"Accept": "application/xml"})
     resp.raise_for_status()
-    return resp.content
 
-def extract_relevant_text_and_sections(root, ref):
+    # Store the file in a temporary directory
+    temp_file = tempfile.NamedTemporaryFile(delete=False, suffix=".xml")
+    temp_file.write(resp.content)
+    temp_file.close()
+
+    return temp_file.name  # Return the file path
+
+def extract_relevant_text_and_sections(xml_path, ref):
     """
     Extracts text and counts sections using XPath to correctly locate elements regardless of nesting.
     """
@@ -53,6 +61,9 @@ def extract_relevant_text_and_sections(root, ref):
 
     if not hierarchy_trail:
         return "", 0  # No valid reference
+
+    tree = ET.parse(xml_path)
+    root = tree.getroot()
 
     # Build the XPath query dynamically based on available hierarchy
     xpath_query = ".//"
@@ -78,14 +89,14 @@ def extract_relevant_text_and_sections(root, ref):
                 section_count += 1
 
     return " ".join(text_segments), section_count
-    
+
 def count_words(text):
     """Counts words in the extracted text."""
     return len(text.split())
 
 # ========== COMPUTE WORD & SECTION COUNT ==========
-def compute_agency_word_and_section_count(agency, titles_data, title_xml_cache):
-    """Computes word and section count for agencies, ensuring we follow the hierarchy trail."""
+def compute_agency_word_and_section_count(agency, titles_data):
+    """Computes word and section count for agencies, ensuring we follow the hierarchy trail while caching XML on disk."""
     results = {
         "slug": agency["slug"], 
         "total_words": 0,
@@ -99,7 +110,7 @@ def compute_agency_word_and_section_count(agency, titles_data, title_xml_cache):
         child_name = child["name"]
         child_refs = child.get("cfr_references", [])
 
-        child_words, child_sections = compute_references_word_and_section_count(child_refs, titles_data, title_xml_cache)
+        child_words, child_sections = compute_references_word_and_section_count(child_refs, titles_data)
         results["children"][child_name] = {
             "slug": child["slug"],
             "words": child_words,
@@ -108,14 +119,14 @@ def compute_agency_word_and_section_count(agency, titles_data, title_xml_cache):
         results["total_words"] += child_words
         results["total_sections"] += child_sections
 
-    agency_words, agency_sections = compute_references_word_and_section_count(references, titles_data, title_xml_cache)
+    agency_words, agency_sections = compute_references_word_and_section_count(references, titles_data)
     results["total_words"] += agency_words
     results["total_sections"] += agency_sections
 
     return results
 
-def compute_references_word_and_section_count(references, titles_data, title_xml_cache):
-    """Computes word and section count while following the hierarchy trail using XPath."""
+def compute_references_word_and_section_count(references, titles_data):
+    """Computes word and section count while following the hierarchy trail using XPath with disk caching."""
     total_words = 0
     total_sections = 0
     refs_by_title = defaultdict(list)
@@ -128,18 +139,15 @@ def compute_references_word_and_section_count(references, titles_data, title_xml
         if not latest_date:
             continue
 
-        cache_key = (title_num, latest_date)
-        if cache_key not in title_xml_cache:
-            xml_bytes = download_entire_title_xml(title_num, latest_date)
-            root = ET.fromstring(xml_bytes)  # Use `lxml.etree`
-            # title_xml_cache[cache_key] = root
-        else:
-            root = title_xml_cache[cache_key]
+        xml_path = download_and_cache_title_xml(title_num, latest_date)
 
         for ref in ref_list:
-            extracted_text, section_count = extract_relevant_text_and_sections(root, ref)
+            extracted_text, section_count = extract_relevant_text_and_sections(xml_path, ref)
             total_words += count_words(extracted_text)
             total_sections += section_count
+
+        # Delete the cached file after processing
+        os.remove(xml_path)
 
     return total_words, total_sections
 
@@ -166,12 +174,11 @@ def process_agency_data():
     """Process and return agency data with word and section counts."""
     agencies = fetch_agencies()
     titles_data = fetch_titles_info()
-    title_xml_cache = {}
 
     results = {}
     for ag in agencies:
         ag_name = ag["name"]
-        word_section_data = compute_agency_word_and_section_count(ag, titles_data, title_xml_cache)
+        word_section_data = compute_agency_word_and_section_count(ag, titles_data)
         results[ag_name] = word_section_data
 
     return results
@@ -185,11 +192,10 @@ def process_corrections_data():
 #     """Process all data and save to files."""
 #     # Process agency data
 #     results = process_agency_data()
-    
+
+#     # Process corrections data
 #     corrections_summary = process_corrections_data()
 
-#     print(len(results))
-#     print(len(corrections_summary))
 
 # if __name__ == "__main__":
 #     main()
