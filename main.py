@@ -166,7 +166,7 @@ def process_agency_data():
         ag_name = ag["name"]
         word_section_data = compute_agency_word_and_section_count(ag, titles_data, title_xml_cache)
         results[ag_name] = word_section_data
-
+        print(ag_name)
     return results
 
 def process_corrections_data():
