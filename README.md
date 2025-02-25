@@ -1,28 +1,41 @@
 # eCFR Backend API
 
-## Overview:
-REST-API builted on Flask for https://ecfr-frontend-1b42d1c0ad44.herokuapp.com/
-The API is used to fetch agency information and statistics. It includes a script to initialize the database and import the data from the eCFR API, so that the data is pre-computed and the API can serve the data quickly.
+A Flask-based REST API that provides analytics and data about federal regulations from the Electronic Code of Federal Regulations (eCFR).
+
+## Features
+
+- Agency statistics and hierarchy
+- Word count and section analysis
+- Historical corrections tracking
+- RESTful API endpoints
+- PostgreSQL database integration
 
 ## API Endpoints
 
-- `GET /api/agencies` - List all top level agencies with their stats
+- `GET /api/agencies` - List all agencies with their statistics
 - `GET /api/agencies/<slug>` - Get detailed information about a specific agency and its child agencies
-- `GET /api/statistics/total` - Get aggregate stats
+- `GET /api/statistics/total` - Get aggregate statistics across all agencies
 - `GET /api/corrections` - Get historical correction data by year
+- `GET /api/health` - Health check endpoint
+
+## Prerequisites
+
+- Python 3.11.7 or higher
+- PostgreSQL 12 or higher
+- pip and virtualenv
 
 ## Local Development Setup
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
+git clone https://github.com/josephycyeh/ecfr-analyzer-backend.git
 cd eCFR-backend
 ```
 
 2. Create and activate a virtual environment:
 ```bash
 python -m venv venv
-source venv/bin/activate 
+source venv/bin/activate  # On Windows: venv\Scripts\activate
 ```
 
 3. Install dependencies:
@@ -30,11 +43,16 @@ source venv/bin/activate
 pip install -r requirements.txt
 ```
 
-4. Set up PostgreSQL (SKIP IF YOU ALREADY HAVE IT INSTALLED)
+4. Set up PostgreSQL:
 ```bash
 # macOS (using Homebrew)
 brew install postgresql
 brew services start postgresql
+
+# Ubuntu/Debian
+sudo apt-get update
+sudo apt-get install postgresql postgresql-contrib
+sudo service postgresql start
 ```
 
 5. Create the database:
@@ -55,9 +73,6 @@ DB_PASSWORD=postgres
 ```
 
 7. Initialize the database and import data:
-
-This will create the database, run a script to compute the stats, and import the data.
-
 ```bash
 python init_db.py
 ```
@@ -69,34 +84,68 @@ python app.py
 
 The API will be available at `http://localhost:5001`
 
+## Deployment to Heroku
+
+1. Install the Heroku CLI and login:
+```bash
+brew tap heroku/brew && brew install heroku
+heroku login
+```
+
+2. Create a new Heroku app:
+```bash
+heroku create ecfr-backend
+```
+
+3. Add PostgreSQL addon:
+```bash
+heroku addons:create heroku-postgresql:mini
+```
+
+4. Set environment variables:
+```bash
+heroku config:set FLASK_ENV=production
+```
+
+5. Deploy the application:
+```bash
+git push heroku main
+```
+
+6. Initialize the database:
+```bash
+heroku run python init_db.py
+```
 
 ## Data Processing
 
-The eCFR stats is precomputed by:
-
+The application processes eCFR data by:
 1. Fetching agency information from the eCFR API
-2. Parsing the references for each agency
-4. Getting the latest date for each title
-5. Downloading and parsing XML content for each title
-6. Computing word counts and section numbers
+2. Downloading and parsing XML content for each title
+3. Computing word counts and section numbers
+4. Tracking historical corrections
+5. Storing processed data in PostgreSQL
 
-Verifying the data:
+## Project Structure
 
-1. Check if the data is correctly parsed
-2. Wrote another script by using the /api/versioner/v1/structure/{date}/title-{title}.json endpoint
-3. Manually checked the data for a few agencies
+- `app.py` - Main Flask application and API routes
+- `config.py` - Configuration management
+- `db.py` - Database connection and query utilities
+- `init_db.py` - Database initialization script
+- `main.py` - Data processing utilities
+- `schema.sql` - Database schema
+- `services/` - Business logic and data services
+  - `agency_service.py` - Agency-related operations
+  - `corrections_service.py` - Corrections data handling
 
-Callouts
- - Depending how you're parsing the XML data, you might get slightly different word counts and section counts. 
- 
- For example, on DOGE, Appalachian Regional Commission has 77 words while I counted 85.
- Another example is the General Services Administration. DOGE counted 536 sections while I counted 1.15k (verified through the structures API).
+## Contributing
 
-## Areas of improvement
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Run tests
+5. Submit a pull request
 
-- Cron job to update the stats daily
-- Streaming XML data from the eCFR API so it can be more memory efficient
-- More robust database schema to store the data to we can track historical changes
+## License
 
-
-
+This project is licensed under the MIT License.
