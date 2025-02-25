@@ -96,5 +96,5 @@ Callouts
 
 - Cron job to update the stats daily
 - Streaming XML data from the eCFR API so it can be more memory efficient
-- More robust database schema to store the data to we can track historical changes
+- More robust database schema to store the data so we can track historical changes
 
