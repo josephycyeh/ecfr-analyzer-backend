@@ -132,7 +132,7 @@ def compute_references_word_and_section_count(references, titles_data, title_xml
         if cache_key not in title_xml_cache:
             xml_bytes = download_entire_title_xml(title_num, latest_date)
             root = ET.fromstring(xml_bytes)  # Use `lxml.etree`
-            title_xml_cache[cache_key] = root
+            # title_xml_cache[cache_key] = root
         else:
             root = title_xml_cache[cache_key]
 
@@ -180,16 +180,16 @@ def process_corrections_data():
     """Process and return corrections data by year."""
     return count_corrections_by_year()
 
-# ========== MAIN FUNCTION ==========
-def main():
-    """Process all data and save to files."""
-    # Process agency data
-    results = process_agency_data()
+# # ========== MAIN FUNCTION ==========
+# def main():
+#     """Process all data and save to files."""
+#     # Process agency data
+#     results = process_agency_data()
     
-    corrections_summary = process_corrections_data()
+#     corrections_summary = process_corrections_data()
 
-    print(len(results))
-    print(len(corrections_summary))
+#     print(len(results))
+#     print(len(corrections_summary))
 
-if __name__ == "__main__":
-    main()
+# if __name__ == "__main__":
+#     main()
